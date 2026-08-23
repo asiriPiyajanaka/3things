@@ -22,7 +22,8 @@ export const DEFAULT_CONFIG = {
   rememberLearnedTopics: true,
   dailyLearningArea: null,
   learningTerminalMode: 'new',
-  model: null
+  model: null,
+  codexExecutable: null
 };
 
 export const DAILY_AREA_TTL_MS = 24 * 60 * 60 * 1000;

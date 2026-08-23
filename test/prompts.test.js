@@ -10,6 +10,7 @@ test('smartPrompt classifies concrete examples inside meta tasks', () => {
   assert.match(prompt, /First identify the teaching target/);
   assert.match(prompt, /concrete coding example/);
   assert.match(prompt, /classify using the example surface/);
+  assert.match(prompt, /only asking for tools, recommendations, definitions, comparisons, or brainstorming/);
   assert.match(prompt, /if a useful concept can be taught from the code surface, launch/);
 });
 
@@ -22,6 +23,7 @@ test('areasPrompt chooses lenses for the real coding surface', () => {
   assert.match(prompt, /real coding surface/);
   assert.match(prompt, /Extract the concrete thing/);
   assert.match(prompt, /use that example as the teaching target/);
+  assert.match(prompt, /only asking for tools, recommendations, definitions, comparisons, or brainstorming/);
   assert.match(prompt, /Do not recommend a learning area just because/);
   assert.match(prompt, /Only choose Architecture/);
   assert.match(prompt, /reason: maximum 8 words, naming the concrete surface/);
@@ -107,11 +109,15 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /Do not switch to a different technical topic/);
   assert.match(prompt, /For EACH option use this structure/);
   assert.match(prompt, /## <short section title>/);
-  assert.match(prompt, /Choose 3 to 5 short section titles/);
-  assert.match(prompt, /Debugging flow/);
-  assert.match(prompt, /Before \/ after/);
-  assert.match(prompt, /section names and order should fit the topic/);
-  assert.match(prompt, /hook payoff in the first 2 sentences/);
+  assert.match(prompt, /Use exactly 4 sections per lesson/);
+  assert.match(prompt, /Why this matters here/);
+  assert.match(prompt, /How it works/);
+  assert.match(prompt, /What to look for/);
+  assert.match(prompt, /Mistake to avoid/);
+  assert.match(prompt, /Depth contract/);
+  assert.match(prompt, /Do not create one-section-per-ingredient checklists/);
+  assert.match(prompt, /2 to 4 substantive sentences/);
+  assert.match(prompt, /pay off the hook in the first 2 sentences/);
   assert.match(prompt, /Start from the hook/);
   assert.match(prompt, /experienced engineers/);
   assert.match(prompt, /simple, direct, real-world language/);
@@ -127,7 +133,7 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /Do not teach recommendation-system architecture/);
   assert.match(prompt, /surprising nearby concept/);
   assert.match(prompt, /at least 3 concrete facts, mechanisms, or named tradeoffs/);
-  assert.match(prompt, /what to look for in code/);
+  assert.match(prompt, /task-level inspection details/);
   assert.match(prompt, /real data from the task/);
   assert.match(prompt, /one real example an engineer recognizes/);
   assert.match(prompt, /For a button task/);
@@ -135,12 +141,12 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /what happens, why it happens, what to check/);
   assert.match(prompt, /cause-and-effect chain/);
   assert.match(prompt, /If a paragraph could apply to almost any task/);
+  assert.match(prompt, /Do not use section titles named Core Idea/);
   assert.match(prompt, /Do not open with poetic contrast/);
   assert.match(prompt, /hooks, processes, stdout/);
-  assert.match(prompt, /one mistake to avoid/);
   assert.match(prompt, /Connect back to the current task in one short section/);
   assert.match(prompt, /already knows the requested feature/);
-  assert.match(prompt, /roughly 450-650 words/);
+  assert.match(prompt, /roughly 650-900 words/);
   assert.match(prompt, /full lesson text/);
   assert.doesNotMatch(prompt, /Output only topic headings/);
 });

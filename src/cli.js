@@ -16,7 +16,7 @@ import {
   signOff
 } from './store.js';
 import { chooseMany, chooseOne, confirm, heading, inputText, revealText } from './ui.js';
-import { codexAvailable } from './codex.js';
+import { codexAvailable, resolveCodexExecutable } from './codex.js';
 import { installHook, buildHookCommand } from './hook.js';
 import { argValue, captureEventFromArgs, normalizeTaskEvent, preview, taskLabel } from './task-event.js';
 import { handleCapturedTask, learnCommand } from './learning-flow.js';
@@ -66,10 +66,12 @@ function printReady(config) {
 
 async function init() {
   heading('3Things setup');
-  if (!codexAvailable()) {
+  const codexExecutable = resolveCodexExecutable();
+  if (!codexExecutable || !codexAvailable(codexExecutable)) {
     throw new Error('Codex CLI was not found. Install/login to Codex first, then rerun `3things init`.');
   }
   let config = loadConfig();
+  config.codexExecutable = codexExecutable;
   config = await configure(config);
   config = await configureInterests(config);
   saveConfig(config);

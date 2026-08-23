@@ -5,7 +5,6 @@ const CURSOR_UP = (n) => n > 0 ? `\x1b[${n}A` : '';
 const WRAP_OFF = '\x1b[?7l';
 const WRAP_ON = '\x1b[?7h';
 const ANSI_RESET = '\x1b[0m';
-const ANSI_INVERSE = '\x1b[7m';
 const ANSI_BOLD = '\x1b[1m';
 const ANSI_DIM = '\x1b[2m';
 const ANSI_CYAN = '\x1b[36m';
@@ -48,20 +47,57 @@ function wrapPlain(text, width) {
   return lines;
 }
 
-function menuLines({ marker, label, active = false, width = terminalLineWidth() }) {
-  const firstPrefix = `${marker} `;
-  const restPrefix = ' '.repeat(visibleWidth(firstPrefix));
-  const labelLines = String(label).split('\n');
-  const lines = [];
+function ansi(text, codes) {
+  if (!colorEnabled()) return text;
+  return `${codes.join('')}${text}${ANSI_RESET}`;
+}
 
-  labelLines.forEach((labelLine, labelIndex) => {
-    const prefix = labelIndex === 0 ? firstPrefix : restPrefix;
-    const wrapped = wrapPlain(labelLine, Math.max(16, width - visibleWidth(prefix)));
-    lines.push(...wrapped.map((part, index) => `${index === 0 ? prefix : restPrefix}${part}`));
+function wrapMenuText(text, { prefix, continuationPrefix = prefix, width, decorate = (value) => value }) {
+  const available = Math.max(16, width - visibleWidth(prefix));
+  const wrapped = wrapPlain(text, available);
+  return wrapped.map((part, index) => {
+    const linePrefix = index === 0 ? prefix : continuationPrefix;
+    return `${linePrefix}${decorate(part)}`;
+  });
+}
+
+function menuLines({ marker, label, active = false, width = terminalLineWidth() }) {
+  const [titleLine, ...detailLines] = String(label).split('\n');
+  const markerText = active ? ansi(marker, [ANSI_CYAN, ANSI_BOLD]) : marker;
+  const titlePrefix = `${markerText} `;
+  const titleContinuation = '  ';
+  const detailPrefix = '    ';
+  const titleStyle = (value) => active ? ansi(value, [ANSI_BOLD]) : value;
+  const detailStyle = (value) => colorEnabled() ? ansi(value, [ANSI_DIM]) : value;
+  const lines = wrapMenuText(titleLine.trim(), {
+    prefix: titlePrefix,
+    continuationPrefix: titleContinuation,
+    width,
+    decorate: titleStyle
   });
 
-  if (!active || !colorEnabled()) return lines;
-  return lines.map((line) => `${ANSI_INVERSE}${ANSI_BOLD}${line}${ANSI_RESET}`);
+  for (const detailLine of detailLines) {
+    const detail = detailLine.trim();
+    if (!detail) continue;
+    lines.push(...wrapMenuText(detail, {
+      prefix: detailPrefix,
+      continuationPrefix: detailPrefix,
+      width,
+      decorate: detailStyle
+    }));
+  }
+
+  return lines;
+}
+
+function printFallbackOptions(options) {
+  options.forEach((option, index) => {
+    const [title, ...details] = String(option.label).split('\n');
+    console.log(`  ${index + 1}. ${title.trim()}`);
+    details.map((line) => line.trim()).filter(Boolean).forEach((line) => {
+      console.log(`     ${line}`);
+    });
+  });
 }
 
 function questionLines(question) {
@@ -214,7 +250,7 @@ export async function confirm(question, defaultYes = true) {
 export async function chooseOne(question, options) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.log(question);
-    options.forEach((o, i) => console.log(`  ${i + 1}. ${o.label}`));
+    printFallbackOptions(options);
     const raw = await fallbackQuestion('Choose: ');
     const index = Math.max(0, Math.min(options.length - 1, Number(raw) - 1));
     return options[index].value;
@@ -272,7 +308,7 @@ export async function chooseOne(question, options) {
 export async function chooseMany(question, options, selectedValues = []) {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.log(question);
-    options.forEach((o, i) => console.log(`  ${i + 1}. ${o.label}`));
+    printFallbackOptions(options);
     const raw = await fallbackQuestion('Choose comma-separated numbers: ');
     return raw.split(',').map((v) => options[Number(v.trim()) - 1]?.value).filter(Boolean);
   }

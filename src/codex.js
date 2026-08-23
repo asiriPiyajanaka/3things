@@ -8,16 +8,33 @@ function tempFile(name) {
   return path.join(os.tmpdir(), `3things-${process.pid}-${Date.now()}-${name}`);
 }
 
-export function codexAvailable() {
-  const result = spawnSync('codex', ['--version'], { encoding: 'utf8', env: codexChildEnv() });
+export function codexAvailable(executable = resolveCodexExecutable()) {
+  if (!executable) return false;
+  const result = spawnSync(executable, ['--version'], { encoding: 'utf8', env: codexChildEnv() });
   return result.status === 0;
 }
 
-export function runCodex(prompt, { cwd = process.cwd(), model = null, schema = null } = {}) {
+export function resolveCodexExecutable(baseEnv = process.env) {
+  const pathValue = baseEnv.PATH || baseEnv.Path || '';
+  for (const dir of pathValue.split(path.delimiter).filter(Boolean)) {
+    const candidate = path.resolve(dir, process.platform === 'win32' ? 'codex.cmd' : 'codex');
+    try {
+      fs.accessSync(candidate, fs.constants.X_OK);
+      return candidate;
+    } catch {}
+  }
+  return null;
+}
+
+function codexCommand(configuredExecutable = null) {
+  return configuredExecutable || resolveCodexExecutable() || 'codex';
+}
+
+export function runCodex(prompt, { cwd = process.cwd(), model = null, schema = null, codexExecutable = null } = {}) {
   const outputFile = tempFile('output.txt');
   const args = codexExecArgs({ cwd, model, schema, outputFile });
 
-  const result = spawnSync('codex', args, {
+  const result = spawnSync(codexCommand(codexExecutable), args, {
     input: prompt,
     encoding: 'utf8',
     env: codexChildEnv(),
@@ -58,12 +75,12 @@ function readOutputFile(outputFile) {
   return output;
 }
 
-export function runCodexAsync(prompt, { cwd = process.cwd(), model = null, schema = null } = {}) {
+export function runCodexAsync(prompt, { cwd = process.cwd(), model = null, schema = null, codexExecutable = null } = {}) {
   const outputFile = tempFile('output.txt');
   const args = codexExecArgs({ cwd, model, schema, outputFile });
 
   return new Promise((resolve, reject) => {
-    const child = spawn('codex', args, {
+    const child = spawn(codexCommand(codexExecutable), args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: codexChildEnv()
     });

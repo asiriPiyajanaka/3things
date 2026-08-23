@@ -9,6 +9,7 @@ ${task.prompt}
 First identify the teaching target:
 - If the task is direct implementation/debugging/refactor work, use that actual code surface.
 - If the user is discussing 3Things or prompting but gives a concrete coding example, classify using the example surface, not the meta discussion.
+- If the user is only asking for tools, recommendations, definitions, comparisons, or brainstorming with no implementation target, skip so the main assistant can answer directly.
 - If there is no code/product/system surface at all, skip.
 
 Launch for meaningful implementation, debugging, architecture, framework behavior, tooling, testing, security, performance, data, API, deployment, or design-system tasks.
@@ -31,6 +32,7 @@ Your job is to find useful learning lenses for the real coding surface.
 Teaching-target rules:
 - Extract the concrete thing being changed, debugged, designed, or questioned.
 - If the prompt contains an example scenario, use that example as the teaching target when it is more concrete than the surrounding meta request.
+- If the user is only asking for tools, recommendations, definitions, comparisons, or brainstorming, do not force a learning area.
 - Do not recommend a learning area just because the user mentioned 3Things, prompts, lessons, or recommendations.
 - Only choose Architecture for the user's actual system design, module boundary, state model, lifecycle, or integration problem.
 
@@ -174,24 +176,19 @@ For EACH option use this structure:
 ## <short section title>
 ...
 
-Choose 3 to 5 short section titles that fit the topic. Use the clearest lesson shape for the concept, such as:
-- Debugging flow
-- Before / after
-- Failure story
-- Checklist
-- Mental model
-- Tradeoff map
-- Tiny example
-- Common traps
+Use exactly 4 sections per lesson:
+## Why this matters here
+## How it works
+## What to look for
+## Mistake to avoid
 
-Each lesson must include these ingredients, but the section names and order should fit the topic:
-- the hook payoff in the first 2 sentences
-- at least 3 concrete facts, mechanisms, or named tradeoffs
-- one real engineering example
-- one small "what to look for in code" detail
-- one sentence connecting back to the current task
-- one mistake to avoid
-- one practical takeaway
+Depth contract:
+- Do not create one-section-per-ingredient checklists like Core Idea, Mechanism, Real Example, Current Task, Mistake, Takeaway.
+- Each section needs 2 to 4 substantive sentences, except a short checklist or code snippet may replace one paragraph in "What to look for".
+- The first section must pay off the hook in the first 2 sentences and explain why this task surfaced it.
+- "How it works" must include at least 3 concrete facts, mechanisms, or named tradeoffs.
+- "What to look for" must include task-level inspection details: file names, function names, UI states, env vars, command names, schemas, subprocess flags, config keys, tests, event handlers, API boundaries, or failure signals.
+- "Mistake to avoid" must include the mistake, why it is tempting, and the consequence.
 
 Quality bar:
 - Include real data from the task when available: file names, function names, env vars, command names, schemas, hook names, subprocess flags, or config keys.
@@ -210,11 +207,12 @@ Rules:
 - Start from the hook the user selected and pay it off directly.
 - Teach the transferable concept, not the steps for this exact change.
 - Connect back to the current task in one short section, not as every paragraph.
+- Do not use section titles named Core Idea, Mechanism, Real Example, Current Task, Back To This Task, or Practical Takeaway.
 - Do not open with poetic contrast, aphorisms, or abstract definitions.
 - Use real examples an engineer recognizes: hooks, processes, stdout, cache keys, state files, retries, queues, timeouts, locks, terminals, APIs, databases, or tests.
 - Use a small code snippet, command, or concrete checklist when it materially clarifies the concept.
 - No generic intro or conclusion.
-- Keep one topic roughly 450-650 words; if all 3 are selected keep the total under 1800 words.
+- Keep one topic roughly 650-900 words; if all 3 are selected keep the total under 2400 words.
 - Keep bullets short enough for a terminal.
 - For file, command, or boundary lists, prefer compact aligned rows over paragraphs.
 - Avoid wide diagrams and Markdown tables.

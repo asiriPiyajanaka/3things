@@ -39,6 +39,7 @@ export async function handleCapturedTask(event) {
       const decision = runCodexJson(smartPrompt(event), {
         cwd: event.cwd || process.cwd(),
         model: config.model,
+        codexExecutable: config.codexExecutable,
         schema: smartSchema
       });
       markSmartDecision({ eventFile, launch: decision.launch, reason: decision.reason });
@@ -78,6 +79,7 @@ async function chooseLearningArea(task, config, { changeArea = false } = {}) {
   const areas = (await withSpinner('Finding useful learning directions', () => runCodexJsonAsync(areasPrompt(task, config), {
     cwd: task.cwd,
     model: config.model,
+    codexExecutable: config.codexExecutable,
     schema: areasSchema
   }))).options;
 
@@ -104,6 +106,7 @@ async function runLesson(eventFile, config, { changeArea = false } = {}) {
   const topics = (await withSpinner(`Finding 3 things in ${area}`, () => runCodexJsonAsync(topicsPrompt(task, area, recentTopicTitles()), {
     cwd: task.cwd,
     model: config.model,
+    codexExecutable: config.codexExecutable,
     schema: topicsSchema
   }))).topics;
 
@@ -119,7 +122,8 @@ async function runLesson(eventFile, config, { changeArea = false } = {}) {
   console.log('');
   const lesson = await withSpinner('Building your lesson', () => runCodexAsync(lessonPrompt(task, area, selectedTopics), {
     cwd: task.cwd,
-    model: config.model
+    model: config.model,
+    codexExecutable: config.codexExecutable
   }));
   console.log('');
   const rendered = renderLesson(lesson, { area, topics: selectedTopics });
