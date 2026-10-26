@@ -7,23 +7,54 @@ export function buildHookCommand(nodePath, cliPath) {
   return `${quote(nodePath)} ${quote(cliPath)} hook`;
 }
 
-export function installHook(command) {
-  fs.mkdirSync(path.dirname(codexHooksPath), { recursive: true });
+function is3ThingsHook(hook) {
+  return hook?.type === 'command' &&
+    typeof hook.command === 'string' &&
+    hook.command.includes('3things') &&
+    hook.command.endsWith(' hook');
+}
+
+export function installHook(command, hooksPath = codexHooksPath) {
+  fs.mkdirSync(path.dirname(hooksPath), { recursive: true });
   let root = {};
-  if (fs.existsSync(codexHooksPath)) {
-    try { root = JSON.parse(fs.readFileSync(codexHooksPath, 'utf8')); }
-    catch { throw new Error(`Cannot parse existing ${codexHooksPath}. Fix it before installing 3Things.`); }
+  if (fs.existsSync(hooksPath)) {
+    try { root = JSON.parse(fs.readFileSync(hooksPath, 'utf8')); }
+    catch { throw new Error(`Cannot parse existing ${hooksPath}. Fix it before installing 3Things.`); }
   }
   root.hooks ||= {};
   root.hooks.UserPromptSubmit ||= [];
 
-  const alreadyInstalled = root.hooks.UserPromptSubmit.some((group) =>
-    Array.isArray(group.hooks) && group.hooks.some((hook) =>
-      typeof hook.command === 'string' && hook.command.includes('3things') && hook.command.endsWith(' hook')
-    )
-  );
+  let found = false;
+  let updated = false;
+  let removed = 0;
+  for (const group of root.hooks.UserPromptSubmit) {
+    if (!Array.isArray(group.hooks)) continue;
+    const hooks = [];
+    for (const hook of group.hooks) {
+      if (!is3ThingsHook(hook)) {
+        hooks.push(hook);
+        continue;
+      }
+      if (found) {
+        removed += 1;
+        updated = true;
+        continue;
+      }
+      found = true;
+      const nextHook = {
+        ...hook,
+        type: 'command',
+        command,
+        async: true,
+        timeout: 120
+      };
+      updated ||= JSON.stringify(nextHook) !== JSON.stringify(hook);
+      hooks.push(nextHook);
+    }
+    group.hooks = hooks;
+  }
 
-  if (!alreadyInstalled) {
+  if (!found) {
     root.hooks.UserPromptSubmit.push({
       hooks: [{
         type: 'command',
@@ -34,6 +65,10 @@ export function installHook(command) {
     });
   }
 
-  fs.writeFileSync(codexHooksPath, `${JSON.stringify(root, null, 2)}\n`);
-  return { path: codexHooksPath, added: !alreadyInstalled };
+  root.hooks.UserPromptSubmit = root.hooks.UserPromptSubmit.filter((group) =>
+    !Array.isArray(group.hooks) || group.hooks.length > 0
+  );
+
+  fs.writeFileSync(hooksPath, `${JSON.stringify(root, null, 2)}\n`);
+  return { path: hooksPath, added: !found, updated, removed };
 }

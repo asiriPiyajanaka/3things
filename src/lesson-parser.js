@@ -1,4 +1,7 @@
 export const SECTION_ORDER = [
+  'What just happened',
+  'So what',
+  'Three moves',
   'Mental model',
   'How it works',
   'In this task',
@@ -42,7 +45,7 @@ function parseSectionLine(line) {
     if (name) return { name, rest: bold[2].trim() };
   }
 
-  const plain = line.match(/^(Mental model|How it works|In this task|Common mistake|Remember)\s*(?:[-—:]\s*)?(.*)$/i);
+  const plain = line.match(/^(What just happened|So what|Three moves|Mental model|How it works|In this task|Common mistake|Remember)\s*(?:[-—:]\s*)?(.*)$/i);
   if (plain) {
     const name = sectionName(plain[1]);
     if (name) return { name, rest: plain[2].trim() };

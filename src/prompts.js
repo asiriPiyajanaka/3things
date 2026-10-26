@@ -171,24 +171,33 @@ Teaching target:
 
 The task is a launchpad, not the curriculum. Teach the surprising nearby concept, not the requested change and not a meta explanation of why the concept was chosen.
 
+Teaching format:
+- Use an incident-first teaching arc, like a good short technical video script.
+- Open with a concrete "you did X, then Y happened" situation using the task surface.
+- Name real consequences before definitions. Make the learner feel why this matters.
+- Use "So ..." as the bridge from the incident to the transferable concept.
+- Give exactly 3 practical moves for the concept. Each move must be an action an engineer can direct an AI or teammate to do, inspect, test, or configure.
+- After each move, state the win in one plain sentence.
+- End with one memorable sentence that is useful, not poetic.
+
 For EACH option use this structure:
 # <same title>
-## <short section title>
-...
+## What just happened
+## So what
+## Three moves
+## Remember
 
 Use exactly 4 sections per lesson:
-## Why this matters here
-## How it works
-## What to look for
-## Mistake to avoid
+## What just happened
+## So what
+## Three moves
+## Remember
 
 Depth contract:
-- Do not create one-section-per-ingredient checklists like Core Idea, Mechanism, Real Example, Current Task, Mistake, Takeaway.
-- Each section needs 2 to 4 substantive sentences, except a short checklist or code snippet may replace one paragraph in "What to look for".
-- The first section must pay off the hook in the first 2 sentences and explain why this task surfaced it.
-- "How it works" must include at least 3 concrete facts, mechanisms, or named tradeoffs.
-- "What to look for" must include task-level inspection details: file names, function names, UI states, env vars, command names, schemas, subprocess flags, config keys, tests, event handlers, API boundaries, or failure signals.
-- "Mistake to avoid" must include the mistake, why it is tempting, and the consequence.
+- "What just happened" is the hook. Use second person when natural. Include a concrete failure, hidden cost, or surprising consequence.
+- "So what" explains the concept in cause-and-effect terms. Include at least 3 concrete facts, mechanisms, or named tradeoffs.
+- "Three moves" must contain exactly 3 numbered actions. Each action needs the instruction and the win.
+- "Remember" is 1 to 3 short sentences. It must include the mistake to avoid, why it is tempting, and the consequence.
 
 Quality bar:
 - Include real data from the task when available: file names, function names, env vars, command names, schemas, hook names, subprocess flags, or config keys.
@@ -206,13 +215,13 @@ Quality bar:
 Rules:
 - Start from the hook the user selected and pay it off directly.
 - Teach the transferable concept, not the steps for this exact change.
-- Connect back to the current task in one short section, not as every paragraph.
-- Do not use section titles named Core Idea, Mechanism, Real Example, Current Task, Back To This Task, or Practical Takeaway.
+- Connect back to the current task through specific details, not generic "in this task" commentary.
+- Do not use section titles named Core Idea, Mechanism, Real Example, Current Task, Back To This Task, Practical Takeaway, Why This Matters Here, How It Works, What To Look For, or Mistake To Avoid.
 - Do not open with poetic contrast, aphorisms, or abstract definitions.
 - Use real examples an engineer recognizes: hooks, processes, stdout, cache keys, state files, retries, queues, timeouts, locks, terminals, APIs, databases, or tests.
 - Use a small code snippet, command, or concrete checklist when it materially clarifies the concept.
 - No generic intro or conclusion.
-- Keep one topic roughly 650-900 words; if all 3 are selected keep the total under 2400 words.
+- Keep one topic roughly 450-700 words; if all 3 are selected keep the total under 1800 words.
 - Keep bullets short enough for a terminal.
 - For file, command, or boundary lists, prefer compact aligned rows over paragraphs.
 - Avoid wide diagrams and Markdown tables.

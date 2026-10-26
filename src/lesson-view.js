@@ -4,6 +4,9 @@ import { parseLesson, stripMarkdown } from './lesson-parser.js';
 export { parseLesson };
 
 const SECTION_META = {
+  'What just happened': { label: 'What Just Happened', color: 'yellow', icon: '!' },
+  'So what': { label: 'So What', color: 'cyan', icon: '◉' },
+  'Three moves': { label: 'Three Moves', color: 'blue', icon: '▣' },
   'Mental model': { label: 'Mental Model', color: 'cyan', icon: '◉' },
   'How it works': { label: 'How It Works', color: 'blue', icon: '▣' },
   'In this task': { label: 'In This Task', color: 'magenta', icon: '◆' },

@@ -55,6 +55,25 @@ Look at the active pid and pending task marker.
   assert.match(lessons[0].sections[1].text, /stdout may still be open/);
 });
 
+test('parseLesson recognizes incident-first lesson sections', () => {
+  const lessons = parseLesson(`
+# Hidden Buttons Still Exist
+**What just happened** — You hid a submit button, but the form still accepts Enter.
+**So what** — Visibility changes presentation, not authority.
+**Three moves** — 1. Test keyboard submit. Win: hidden controls stop surprising you.
+**Remember** — A missing click target is not a missing action path.
+`);
+
+  assert.equal(lessons.length, 1);
+  assert.deepEqual(lessons[0].sections.map((section) => section.name), [
+    'What just happened',
+    'So what',
+    'Three moves',
+    'Remember'
+  ]);
+  assert.match(lessons[0].sections[2].text, /keyboard submit/);
+});
+
 test('renderLesson removes raw markdown and includes learning context', () => {
   const { text } = renderLesson(markdown, {
     area: 'Architecture',

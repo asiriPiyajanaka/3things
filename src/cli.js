@@ -15,7 +15,7 @@ import {
   saveConfig,
   signOff
 } from './store.js';
-import { chooseMany, chooseOne, confirm, heading, inputText, revealText } from './ui.js';
+import { chooseMany, chooseOne, clearScreen, confirm, heading, inputText, revealText } from './ui.js';
 import { codexAvailable, resolveCodexExecutable } from './codex.js';
 import { installHook, buildHookCommand } from './hook.js';
 import { argValue, captureEventFromArgs, normalizeTaskEvent, preview, taskLabel } from './task-event.js';
@@ -80,7 +80,8 @@ async function init() {
   const result = installHook(command);
 
   console.log(`\n✓ Config saved`);
-  console.log(`${result.added ? '✓' : '•'} Codex UserPromptSubmit hook ${result.added ? 'installed' : 'already installed'}`);
+  const hookStatus = result.added ? 'installed' : result.updated ? 'updated' : 'already installed';
+  console.log(`${result.added || result.updated ? '✓' : '•'} Codex UserPromptSubmit hook ${hookStatus}`);
   console.log(`• ${result.path}`);
   printReady(config);
 }
