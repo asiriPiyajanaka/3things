@@ -1,5 +1,8 @@
 # 3Things
 
+[![CI](https://github.com/asiriPiyajanaka/3things-mvp/actions/workflows/ci.yml/badge.svg)](https://github.com/asiriPiyajanaka/3things-mvp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/asiriPiyajanaka/3things-mvp/blob/main/LICENSE)
+
 Learn three things from the coding work you are already doing.
 
 3Things is a tiny companion CLI for Codex and other coding agents. It captures a real development task, opens a short learning flow when useful, and teaches exactly three concepts tied to that task. Codex remains your normal workflow; 3Things sits beside it.
@@ -13,8 +16,9 @@ npm install -g 3things-cli
 
 Requirements:
 
-- Node.js 20+
+- Node.js 22+
 - Codex CLI installed and authenticated for generated lessons
+- macOS, Windows, or Linux with a supported graphical terminal
 
 `3things init` configures 3Things and installs a Codex `UserPromptSubmit` hook so normal Codex prompts can be captured automatically.
 
@@ -65,6 +69,8 @@ The learning flow is always:
 3things reset
 3things signoff
 ```
+
+`3things signoff` removes the installed 3Things Codex hook and deletes local 3Things data. It preserves unrelated Codex hooks.
 
 `3things` with no subcommand uses the latest captured task.
 
@@ -128,6 +134,8 @@ THREETHINGS_CHILD=1
 
 That prevents recursive hook launches from 3Things' own Codex calls.
 
+To remove the integration, run `3things signoff` before uninstalling the npm package. This prevents a stale hook from pointing to a CLI that no longer exists.
+
 ## Local Data
 
 3Things stores its local state under:
@@ -145,11 +153,32 @@ That prevents recursive hook launches from 3Things' own Codex calls.
 
 Captured task prompts are stored locally so manual mode and newly opened lesson terminals have a reliable handoff. Avoid using 3Things with prompts containing secrets you would not want persisted locally.
 
+Task files and lesson history do not expire automatically. They remain on the machine until you run `3things signoff` or remove `~/.3things/` yourself. Files are created with user-only permissions where the operating system supports them.
+
+Lesson generation sends the captured task to your locally authenticated Codex CLI. Codex runs with an ephemeral session and a read-only project sandbox. 3Things has no server, database, analytics, or telemetry, and it never modifies project code.
+
 To remove local 3Things state:
 
 ```bash
 3things signoff
 ```
+
+## Uninstall
+
+```bash
+3things signoff
+npm uninstall -g 3things-cli
+```
+
+Run `signoff` first so the Codex hook is removed while the CLI is still installed.
+
+## License and Attribution
+
+3Things is released under the [MIT License](https://github.com/asiriPiyajanaka/3things-mvp/blob/main/LICENSE).
+
+Copyright (c) 2026 [asiriPiyajanaka](https://github.com/asiriPiyajanaka). When redistributing copies or substantial portions of 3Things, keep the copyright and license notice, including the project link. Attribution does not imply endorsement.
+
+Contributions are welcome. See the [contribution guide](https://github.com/asiriPiyajanaka/3things-mvp/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asiriPiyajanaka/3things-mvp/blob/main/CODE_OF_CONDUCT.md). Please report security issues using the [security policy](https://github.com/asiriPiyajanaka/3things-mvp/blob/main/SECURITY.md).
 
 ## Development
 

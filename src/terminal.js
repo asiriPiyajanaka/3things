@@ -5,12 +5,21 @@ import { safeSubprocessEnv } from './subprocess-env.js';
 
 const cliPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../bin/3things.js');
 
-function shellQuote(value) {
+function posixShellQuote(value) {
   return `'${String(value).replaceAll(/'/g, `'"'"'`)}'`;
 }
 
-function commandFor(eventFile) {
-  return `${shellQuote(process.execPath)} ${shellQuote(cliPath)} learn --event ${shellQuote(eventFile)}`;
+function powerShellQuote(value) {
+  return `'${String(value).replaceAll(/'/g, "''")}'`;
+}
+
+export function learningCommand(
+  eventFile,
+  { platform = process.platform, nodePath = process.execPath, targetCliPath = cliPath } = {}
+) {
+  const quote = platform === 'win32' ? powerShellQuote : posixShellQuote;
+  const prefix = platform === 'win32' ? '& ' : '';
+  return `${prefix}${quote(nodePath)} ${quote(targetCliPath)} learn --event ${quote(eventFile)}`;
 }
 
 export function macTerminalScript(command) {
@@ -23,20 +32,28 @@ function commandExists(name) {
   return spawnSync(checker, [name], { stdio: 'ignore', env: safeSubprocessEnv() }).status === 0;
 }
 
+export function windowsPowerShellPath(baseEnv = process.env) {
+  const systemRoot = baseEnv.SystemRoot || baseEnv.SYSTEMROOT || baseEnv.WINDIR || 'C:\\Windows';
+  return path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+}
+
+function spawnDetached(executable, args) {
+  const child = spawn(executable, args, { detached: true, stdio: 'ignore', env: safeSubprocessEnv() });
+  child.once('error', () => {});
+  child.unref();
+}
+
 export function openLearningTerminal(eventFile) {
-  const command = commandFor(eventFile);
+  const command = learningCommand(eventFile);
 
   if (process.platform === 'darwin') {
     const script = macTerminalScript(command);
-    const child = spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore', env: safeSubprocessEnv() });
-    child.unref();
+    spawnDetached('osascript', ['-e', script]);
     return true;
   }
 
   if (process.platform === 'win32') {
-    const psCommand = `Start-Process powershell -ArgumentList '-NoExit','-Command',${JSON.stringify(command)}`;
-    const child = spawn('powershell.exe', ['-NoProfile', '-Command', psCommand], { detached: true, stdio: 'ignore', env: safeSubprocessEnv() });
-    child.unref();
+    spawnDetached(windowsPowerShellPath(), ['-NoProfile', '-NoExit', '-Command', command]);
     return true;
   }
 
@@ -49,8 +66,7 @@ export function openLearningTerminal(eventFile) {
 
   for (const [terminal, args] of candidates) {
     if (!commandExists(terminal)) continue;
-    const child = spawn(terminal, args, { detached: true, stdio: 'ignore', env: safeSubprocessEnv() });
-    child.unref();
+    spawnDetached(terminal, args);
     return true;
   }
 

@@ -17,7 +17,7 @@ import {
 } from './store.js';
 import { chooseMany, chooseOne, clearScreen, confirm, heading, inputText, revealText } from './ui.js';
 import { codexAvailable, resolveCodexExecutable } from './codex.js';
-import { installHook, buildHookCommand } from './hook.js';
+import { installHook, removeHook, buildHookCommand } from './hook.js';
 import { argValue, captureEventFromArgs, normalizeTaskEvent, preview, taskLabel } from './task-event.js';
 import { handleCapturedTask, learnCommand } from './learning-flow.js';
 
@@ -25,7 +25,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const cliPath = path.resolve(here, '../bin/3things.js');
 
 function printHelp() {
-  console.log(`3Things — learn three things from the coding tasks you already do.\n\nCommands:\n  3things init           Install Codex hook and configure 3Things\n  3things capture        Capture a task from any coding agent\n  3things config         Change trigger behavior and preferences\n  3things reset          Reset config and run setup again\n  3things signoff        Remove local 3Things state\n  3things interests      Change learning interests\n  3things area           Clear today's learning area\n  3things history        Show recently learned topics\n  3things again          Replay the latest saved lesson\n  3things status         Show local 3Things state\n  3things clear-session  Clear active learning-session marker\n  3things                Learn from the latest captured task\n  3things on|off         Temporarily enable or disable automatic launch\n\nTrigger modes:\n  every   Launch for every captured task\n  smart   Launch only when the task has useful learning value\n  manual  Never auto-launch; run 3things yourself\n`);
+  console.log(`3Things — learn three things from the coding tasks you already do.\n\nCommands:\n  3things init           Install Codex hook and configure 3Things\n  3things capture        Capture a task from any coding agent\n  3things config         Change trigger behavior and preferences\n  3things reset          Reset config and run setup again\n  3things signoff        Remove the Codex hook and local state\n  3things interests      Change learning interests\n  3things area           Clear today's learning area\n  3things history        Show recently learned topics\n  3things again          Replay the latest saved lesson\n  3things status         Show local 3Things state\n  3things clear-session  Clear active learning-session marker\n  3things                Learn from the latest captured task\n  3things on|off         Temporarily enable or disable automatic launch\n\nTrigger modes:\n  every   Launch for every captured task\n  smart   Launch only when the task has useful learning value\n  manual  Never auto-launch; run 3things yourself\n`);
 }
 
 async function configureInterests(config) {
@@ -105,7 +105,11 @@ async function resetCommand() {
 }
 
 function signoffCommand() {
+  const hookResult = removeHook();
   signOff();
+  console.log(hookResult.removed
+    ? `Removed ${hookResult.removed} Codex hook${hookResult.removed === 1 ? '' : 's'} from ~/.codex/hooks.json.`
+    : 'No installed 3Things Codex hook was found.');
   console.log('Removed local 3Things state from ~/.3things.');
   console.log('Run `3things init` when you want to start again.');
 }
@@ -137,10 +141,12 @@ async function hookCommand() {
   try { event = JSON.parse(raw); } catch { return; }
   if (event.hook_event_name !== 'UserPromptSubmit' || !event.prompt?.trim()) return;
 
-  await handleCapturedTask(normalizeTaskEvent({
+  const normalized = normalizeTaskEvent({
     ...event,
     agent: 'codex'
-  }));
+  });
+  if (!normalized) return;
+  await handleCapturedTask(normalized);
 }
 
 async function captureCommand(args) {

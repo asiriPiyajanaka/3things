@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildHookCommand, installHook } from '../src/hook.js';
+import { buildHookCommand, installHook, removeHook } from '../src/hook.js';
 
 test('buildHookCommand quotes node and cli paths', () => {
   const command = buildHookCommand('/path with space/node', '/app/3things/bin/3things.js');
@@ -79,4 +79,44 @@ test('installHook keeps one current 3Things hook and preserves unrelated hooks',
   assert.equal(hooks.length, 2);
   assert.equal(hooks[0].command, '"/node" "/new/3things/bin/3things.js" hook');
   assert.equal(hooks[1].command, 'python3 ~/.codex/hooks/log_prompt.py');
+});
+
+test('removeHook removes 3Things hooks and preserves unrelated configuration', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), '3things-hook-remove-'));
+  const hooksPath = path.join(dir, 'hooks.json');
+  fs.writeFileSync(hooksPath, JSON.stringify({
+    description: 'user hooks',
+    hooks: {
+      UserPromptSubmit: [
+        {
+          matcher: 'ignored-for-this-event',
+          hooks: [
+            { type: 'command', command: '"/node" "/app/bin/3things.js" hook' },
+            { type: 'command', command: 'python3 ~/.codex/hooks/keep.py' }
+          ]
+        },
+        {
+          hooks: [{ type: 'command', command: '"/node" "C:\\old\\bin\\3things.js" hook' }]
+        }
+      ],
+      Stop: [{ hooks: [{ type: 'command', command: 'python3 stop.py' }] }]
+    }
+  }));
+
+  const result = removeHook(hooksPath);
+  const root = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+
+  assert.deepEqual(result, { path: hooksPath, removed: 2, updated: true });
+  assert.equal(root.description, 'user hooks');
+  assert.deepEqual(root.hooks.UserPromptSubmit, [{
+    matcher: 'ignored-for-this-event',
+    hooks: [{ type: 'command', command: 'python3 ~/.codex/hooks/keep.py' }]
+  }]);
+  assert.equal(root.hooks.Stop[0].hooks[0].command, 'python3 stop.py');
+});
+
+test('removeHook is a no-op when the hooks file is missing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), '3things-hook-missing-'));
+  const hooksPath = path.join(dir, 'hooks.json');
+  assert.deepEqual(removeHook(hooksPath), { path: hooksPath, removed: 0, updated: false });
 });

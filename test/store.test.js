@@ -1,8 +1,15 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { latestTaskPath, pendingTaskPath, smartDecisionPath } from '../src/paths.js';
-import {
+import os from 'node:os';
+import path from 'node:path';
+
+const isolatedHome = fs.mkdtempSync(path.join(os.tmpdir(), '3things-store-tests-'));
+process.env.HOME = isolatedHome;
+process.env.USERPROFILE = isolatedHome;
+
+const { latestTaskPath, pendingTaskPath, smartDecisionPath } = await import('../src/paths.js');
+const {
   clearDailyArea,
   clearPendingTask,
   DEFAULT_CONFIG,
@@ -14,7 +21,11 @@ import {
   readSmartDecision,
   saveTask,
   setDailyArea
-} from '../src/store.js';
+} = await import('../src/store.js');
+
+after(() => {
+  fs.rmSync(isolatedHome, { recursive: true, force: true });
+});
 
 test('default trigger is smart', () => {
   assert.equal(DEFAULT_CONFIG.trigger, 'smart');
@@ -75,9 +86,6 @@ test('smart decision stores the latest launch reason', () => {
 });
 
 test('saveTask records the source agent', () => {
-  const previousLatest = fs.existsSync(latestTaskPath)
-    ? fs.readFileSync(latestTaskPath, 'utf8')
-    : null;
   const file = saveTask({
     agent: 'custom-agent',
     prompt: 'Fix retry handling',
@@ -90,6 +98,5 @@ test('saveTask records the source agent', () => {
   assert.equal(task.prompt, 'Fix retry handling');
 
   fs.rmSync(file, { force: true });
-  if (previousLatest === null) fs.rmSync(latestTaskPath, { force: true });
-  else fs.writeFileSync(latestTaskPath, previousLatest);
+  fs.rmSync(latestTaskPath, { force: true });
 });

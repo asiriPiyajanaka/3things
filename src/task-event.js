@@ -4,13 +4,15 @@ function argValue(args, name) {
 }
 
 export function normalizeTaskEvent(event) {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) return null;
+  if (typeof event.prompt !== 'string' || !event.prompt.trim()) return null;
   return {
-    agent: event.agent || 'custom',
+    agent: typeof event.agent === 'string' && event.agent.trim() ? event.agent : 'custom',
     prompt: event.prompt,
-    cwd: event.cwd || process.cwd(),
+    cwd: typeof event.cwd === 'string' && event.cwd.trim() ? event.cwd : process.cwd(),
     session_id: event.session_id || event.sessionId || null,
     turn_id: event.turn_id || event.turnId || null,
-    model: event.model || null
+    model: typeof event.model === 'string' && event.model.trim() ? event.model : null
   };
 }
 
@@ -21,7 +23,7 @@ export function captureEventFromArgs(args, raw) {
     try { parsed = JSON.parse(trimmed); } catch {}
   }
 
-  if (parsed && typeof parsed === 'object') {
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
     return normalizeTaskEvent({
       ...parsed,
       agent: argValue(args, '--agent') || parsed.agent || 'custom',

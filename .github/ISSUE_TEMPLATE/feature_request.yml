@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a focused improvement to 3Things
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What developer-learning problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Product constraints
+      options:
+        - label: This keeps the exactly-three-concepts rule.
+          required: true
+        - label: This does not require modifying user project code.
+          required: true

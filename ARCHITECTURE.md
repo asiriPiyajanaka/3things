@@ -61,6 +61,8 @@ agent adapter
 
 Once a task is captured, trigger policy, terminal behavior, pending lessons, history, and lesson generation are shared.
 
+`3things signoff` removes only 3Things command hooks from the user-level Codex hook file, preserves unrelated hooks, and then deletes local 3Things state. Users should run it before uninstalling the npm package so Codex is not left with a stale command.
+
 ## Why a Codex hook instead of a wrapper
 
 A wrapper such as `3things codex` would require the developer to change habits and would need to proxy terminal behavior. `UserPromptSubmit` gives 3Things the prompt directly while the developer continues to use normal `codex`.

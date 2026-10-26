@@ -10,17 +10,26 @@ export function buildHookCommand(nodePath, cliPath) {
 function is3ThingsHook(hook) {
   return hook?.type === 'command' &&
     typeof hook.command === 'string' &&
-    hook.command.includes('3things') &&
-    hook.command.endsWith(' hook');
+    /(?:^|[\\/])3things\.js["']?\s+hook$/.test(hook.command.trim());
+}
+
+function readHooksFile(hooksPath) {
+  if (!fs.existsSync(hooksPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+  } catch {
+    throw new Error(`Cannot parse existing ${hooksPath}. Fix it before changing 3Things hooks.`);
+  }
+}
+
+function writeHooksFile(hooksPath, root) {
+  fs.mkdirSync(path.dirname(hooksPath), { recursive: true });
+  fs.writeFileSync(hooksPath, `${JSON.stringify(root, null, 2)}\n`);
 }
 
 export function installHook(command, hooksPath = codexHooksPath) {
   fs.mkdirSync(path.dirname(hooksPath), { recursive: true });
-  let root = {};
-  if (fs.existsSync(hooksPath)) {
-    try { root = JSON.parse(fs.readFileSync(hooksPath, 'utf8')); }
-    catch { throw new Error(`Cannot parse existing ${hooksPath}. Fix it before installing 3Things.`); }
-  }
+  const root = readHooksFile(hooksPath) || {};
   root.hooks ||= {};
   root.hooks.UserPromptSubmit ||= [];
 
@@ -69,6 +78,38 @@ export function installHook(command, hooksPath = codexHooksPath) {
     !Array.isArray(group.hooks) || group.hooks.length > 0
   );
 
-  fs.writeFileSync(hooksPath, `${JSON.stringify(root, null, 2)}\n`);
+  writeHooksFile(hooksPath, root);
   return { path: hooksPath, added: !found, updated, removed };
+}
+
+export function removeHook(hooksPath = codexHooksPath) {
+  const root = readHooksFile(hooksPath);
+  const groups = root?.hooks?.UserPromptSubmit;
+  if (!root || !Array.isArray(groups)) {
+    return { path: hooksPath, removed: 0, updated: false };
+  }
+
+  let removed = 0;
+  const nextGroups = [];
+  for (const group of groups) {
+    if (!Array.isArray(group?.hooks)) {
+      nextGroups.push(group);
+      continue;
+    }
+    const hooks = group.hooks.filter((hook) => {
+      if (!is3ThingsHook(hook)) return true;
+      removed += 1;
+      return false;
+    });
+    if (hooks.length > 0) nextGroups.push({ ...group, hooks });
+  }
+
+  if (removed === 0) {
+    return { path: hooksPath, removed, updated: false };
+  }
+
+  if (nextGroups.length > 0) root.hooks.UserPromptSubmit = nextGroups;
+  else delete root.hooks.UserPromptSubmit;
+  writeHooksFile(hooksPath, root);
+  return { path: hooksPath, removed, updated: true };
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveCodexExecutable } from '../src/codex.js';
+import { codexExecArgs, resolveCodexExecutable, runCodex } from '../src/codex.js';
 
 test('resolveCodexExecutable finds codex from caller PATH', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), '3things-codex-bin-'));
@@ -18,4 +18,32 @@ test('resolveCodexExecutable finds codex from caller PATH', () => {
 
 test('resolveCodexExecutable returns null when codex is not on PATH', () => {
   assert.equal(resolveCodexExecutable({ PATH: '' }), null);
+});
+
+test('codexExecArgs keeps internal calls ephemeral and read-only', () => {
+  const args = codexExecArgs({
+    cwd: '/workspace',
+    model: 'test-model',
+    schema: '/schema.json',
+    outputFile: '/output.txt'
+  });
+
+  assert.deepEqual(args, [
+    'exec',
+    '--ephemeral',
+    '--sandbox', 'read-only',
+    '--skip-git-repo-check',
+    '--output-last-message', '/output.txt',
+    '--cd', '/workspace',
+    '--model', 'test-model',
+    '--output-schema', '/schema.json',
+    '-'
+  ]);
+});
+
+test('runCodex reports subprocess failures', () => {
+  assert.throws(() => runCodex('test prompt', {
+    cwd: process.cwd(),
+    codexExecutable: process.execPath
+  }), /Codex learning call failed/);
 });

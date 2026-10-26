@@ -26,3 +26,11 @@ test('codexChildEnv preserves recursion protection', () => {
   assert.equal(env.THREETHINGS_CHILD, '1');
   assert.equal(env.PATH, fixedExecutablePath());
 });
+
+test('fixedExecutablePath includes Windows system tools on Windows', () => {
+  const value = fixedExecutablePath({ SystemRoot: 'C:\\Windows' }, 'win32');
+  assert.equal(value, [
+    'C:\\Windows\\System32',
+    'C:\\Windows\\System32\\WindowsPowerShell\\v1.0'
+  ].join(';'));
+});

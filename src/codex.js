@@ -51,7 +51,7 @@ export function runCodex(prompt, { cwd = process.cwd(), model = null, schema = n
   return output;
 }
 
-function codexExecArgs({ cwd, model, schema, outputFile }) {
+export function codexExecArgs({ cwd, model, schema, outputFile }) {
   const args = [
     'exec',
     '--ephemeral',

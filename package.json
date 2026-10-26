@@ -2,6 +2,10 @@
   "name": "3things-cli",
   "version": "0.1.0",
   "description": "Learn three things from the coding tasks you are already doing.",
+  "author": {
+    "name": "asiriPiyajanaka",
+    "url": "https://github.com/asiriPiyajanaka"
+  },
   "type": "module",
   "homepage": "https://github.com/asiriPiyajanaka/3things-mvp#readme",
   "repository": {
@@ -23,10 +27,11 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check bin/3things.js && node --check src/cli.js"
+    "check": "node scripts/check-syntax.js",
+    "prepublishOnly": "npm test && npm run check"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "license": "MIT",
   "publishConfig": {
@@ -34,6 +39,7 @@
   },
   "files": [
     "bin",
+    "scripts",
     "src",
     "README.md",
     "LICENSE"
