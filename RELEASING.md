@@ -9,6 +9,7 @@ Only maintainers publish releases.
    npm test
    npm run check
    npm pack --dry-run
+   npm publish --dry-run --access public
    ```
 
 3. Confirm the npm package contains only the expected runtime files, README, and license.
