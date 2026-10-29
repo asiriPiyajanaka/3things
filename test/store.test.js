@@ -8,8 +8,9 @@ const isolatedHome = fs.mkdtempSync(path.join(os.tmpdir(), '3things-store-tests-
 process.env.HOME = isolatedHome;
 process.env.USERPROFILE = isolatedHome;
 
-const { latestTaskPath, pendingTaskPath, smartDecisionPath } = await import('../src/paths.js');
+const { latestTaskPath, pendingTaskPath, smartDecisionPath, topicOffersPath } = await import('../src/paths.js');
 const {
+  appendTopicOffers,
   clearDailyArea,
   clearPendingTask,
   DEFAULT_CONFIG,
@@ -19,6 +20,7 @@ const {
   loadTask,
   readPendingTask,
   readSmartDecision,
+  readTopicOffers,
   saveTask,
   setDailyArea
 } = await import('../src/store.js');
@@ -103,4 +105,20 @@ test('saveTask records the source agent', () => {
 
   fs.rmSync(file, { force: true });
   fs.rmSync(latestTaskPath, { force: true });
+});
+
+test('recently offered topics are stored separately from learned history', () => {
+  appendTopicOffers({
+    offeredAt: '2026-10-29T00:00:00.000Z',
+    area: 'Frontend',
+    topics: ['Polling hides failures', 'Forms submit without clicks', 'Focus can move']
+  });
+
+  assert.deepEqual(readTopicOffers(), [{
+    offeredAt: '2026-10-29T00:00:00.000Z',
+    area: 'Frontend',
+    topics: ['Polling hides failures', 'Forms submit without clicks', 'Focus can move']
+  }]);
+
+  fs.rmSync(topicOffersPath, { force: true });
 });

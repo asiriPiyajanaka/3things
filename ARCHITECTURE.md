@@ -141,6 +141,14 @@ One line per learned topic:
 {"learnedAt":"...","area":"Backend","topic":"Payment idempotency","task":"...","cwd":"..."}
 ```
 
+### topic-offers.jsonl
+
+One line per set of three options shown to the learner. This short cooldown history prevents an unselected option from appearing in lesson after lesson.
+
+```json
+{"offeredAt":"...","area":"Frontend","topics":["...","...","..."]}
+```
+
 ## AI calls
 
 ### every mode

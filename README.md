@@ -179,12 +179,13 @@ On macOS, 3Things opens a temporary `.command` file through Terminal. This avoid
   pending-task.json
   smart-decision.json
   history.jsonl
+  topic-offers.jsonl
   tasks/
 ```
 
 Captured task prompts are stored locally so manual mode and newly opened lesson terminals have a reliable handoff. Avoid using 3Things with prompts containing secrets you would not want persisted locally.
 
-Task files and lesson history do not expire automatically. They remain on the machine until you run `3things signoff` or remove `~/.3things/` yourself. Files are created with user-only permissions where the operating system supports them.
+Task files, lesson history, and recent topic offers do not expire automatically. They remain on the machine until you run `3things signoff` or remove `~/.3things/` yourself. Files are created with user-only permissions where the operating system supports them.
 
 Lesson generation sends the captured task to your locally authenticated Codex CLI. Codex runs with an ephemeral session and a read-only project sandbox. 3Things has no server, database, analytics, or telemetry, and it never modifies project code.
 

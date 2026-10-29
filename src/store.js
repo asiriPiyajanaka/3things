@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { configPath, historyPath, homeDir, learningSessionPath, latestTaskPath, pendingTaskPath, smartDecisionPath, tasksDir } from './paths.js';
+import { configPath, historyPath, homeDir, learningSessionPath, latestTaskPath, pendingTaskPath, smartDecisionPath, tasksDir, topicOffersPath } from './paths.js';
 
 export const DEFAULT_INTERESTS = [
   'Frontend',
@@ -231,6 +231,20 @@ export function appendHistory(entry) {
 export function readHistory(limit = 50) {
   if (!fs.existsSync(historyPath)) return [];
   const lines = fs.readFileSync(historyPath, 'utf8').split('\n').filter(Boolean);
+  return lines.slice(-limit).map((line) => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
+}
+
+export function appendTopicOffers(entry) {
+  ensureHome();
+  fs.appendFileSync(topicOffersPath, `${JSON.stringify(entry)}\n`, { mode: 0o600 });
+  try { fs.chmodSync(topicOffersPath, 0o600); } catch {}
+}
+
+export function readTopicOffers(limit = 30) {
+  if (!fs.existsSync(topicOffersPath)) return [];
+  const lines = fs.readFileSync(topicOffersPath, 'utf8').split('\n').filter(Boolean);
   return lines.slice(-limit).map((line) => {
     try { return JSON.parse(line); } catch { return null; }
   }).filter(Boolean);

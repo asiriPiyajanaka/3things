@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   appendHistory,
+  appendTopicOffers,
   clearLearningSession,
   clearPendingTask,
   getFreshDailyArea,
@@ -13,6 +14,7 @@ import {
   markSmartDecision,
   readHistory,
   readPendingTask,
+  readTopicOffers,
   saveConfig,
   saveTask,
   setDailyArea
@@ -23,6 +25,7 @@ import { areasPrompt, lessonPrompt, smartPrompt, topicsPrompt } from './prompts.
 import { openLearningTerminal } from './terminal.js';
 import { focusLessonView, renderLesson } from './lesson-view.js';
 import { preview, taskLabel } from './task-event.js';
+import { repeatedTopicTitles, titlesOverlap } from './topic-novelty.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const smartSchema = path.join(here, 'schemas', 'smart.schema.json');
@@ -66,7 +69,33 @@ export async function handleCapturedTask(event) {
 }
 
 function recentTopicTitles() {
-  return readHistory(80).map((x) => x.topic).filter(Boolean);
+  const learned = readHistory(80).map((item) => item.topic).filter(Boolean);
+  const offered = readTopicOffers(30).flatMap((item) => Array.isArray(item.topics) ? item.topics : []);
+  return [...new Set([...learned, ...offered])];
+}
+
+async function findFreshTopics(task, area, config) {
+  const recent = recentTopicTitles();
+  const fresh = [];
+
+  for (let attempt = 0; attempt < 3 && fresh.length < 3; attempt += 1) {
+    const cooldown = [...recent, ...fresh.map((topic) => topic.title)];
+    const candidates = (await runCodexJsonAsync(topicsPrompt(task, area, cooldown), {
+      cwd: task.cwd,
+      model: config.model,
+      codexExecutable: config.codexExecutable,
+      schema: topicsSchema
+    })).topics;
+
+    const repeated = new Set(repeatedTopicTitles(candidates, cooldown));
+    for (const topic of candidates) {
+      if (repeated.has(topic.title)) continue;
+      if (fresh.some((item) => titlesOverlap(item.title, topic.title))) continue;
+      fresh.push(topic);
+    }
+  }
+
+  return fresh.slice(0, 3);
 }
 
 async function chooseLearningArea(task, config, { changeArea = false } = {}) {
@@ -104,12 +133,16 @@ async function runLesson(eventFile, config, { changeArea = false } = {}) {
   const area = await chooseLearningArea(task, config, { changeArea });
   muted(`Task: ${preview(task.prompt)}`);
 
-  const topics = (await withSpinner(`Finding 3 things in ${area}`, () => runCodexJsonAsync(topicsPrompt(task, area, recentTopicTitles()), {
-    cwd: task.cwd,
-    model: config.model,
-    codexExecutable: config.codexExecutable,
-    schema: topicsSchema
-  }))).topics;
+  const topics = await withSpinner(`Finding 3 things in ${area}`, () => findFreshTopics(task, area, config));
+  if (topics.length !== 3) {
+    throw new Error('Could not find three distinct learning topics. Please try again.');
+  }
+
+  appendTopicOffers({
+    offeredAt: new Date().toISOString(),
+    area,
+    topics: topics.map((topic) => topic.title)
+  });
 
   const chosen = await chooseOne('\nPick what you want to understand:', [
     ...topics.map((topic, index) => ({
@@ -130,7 +163,7 @@ async function runLesson(eventFile, config, { changeArea = false } = {}) {
   const rendered = renderLesson(lesson, { area, topics: selectedTopics });
   clearScreen();
   await revealText(`${rendered.text}\n`);
-  await focusLessonView(rendered.lessons);
+  await focusLessonView(rendered.lessons, { saveToHistory: config.rememberLearnedTopics });
 
   if (config.rememberLearnedTopics) {
     for (const topic of selectedTopics) {
@@ -145,7 +178,9 @@ async function runLesson(eventFile, config, { changeArea = false } = {}) {
     }
   }
 
-  console.log('\n✓ Saved to 3Things history.');
+  console.log(config.rememberLearnedTopics
+    ? '\n✓ Done — lesson saved to history. You can close this window.'
+    : '\n✓ Done. You can close this window.');
   return true;
 }
 

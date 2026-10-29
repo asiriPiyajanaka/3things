@@ -77,6 +77,8 @@ test('topicsPrompt asks for transferable concepts instead of implementation step
   assert.match(prompt, /no filler like "Learn how" or "Understand"/);
   assert.match(prompt, /mechanism, risk, or payoff/);
   assert.match(prompt, /Cognitive Load/);
+  assert.match(prompt, /RECENTLY LEARNED OR OFFERED TOPICS/);
+  assert.match(prompt, /if a recent option contains "polling"/);
 });
 
 test('topicsPrompt treats concrete examples as the teaching target', () => {
@@ -123,12 +125,12 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /concrete failure, hidden cost, or surprising consequence/);
   assert.match(prompt, /cause-and-effect terms/);
   assert.match(prompt, /exactly 3 numbered actions/);
-  assert.match(prompt, /mistake to avoid, why it is tempting, and the consequence/);
   assert.match(prompt, /Start from the hook/);
-  assert.match(prompt, /experienced engineers/);
-  assert.match(prompt, /simple, direct, real-world language/);
+  assert.match(prompt, /simplest useful explanation/);
+  assert.match(prompt, /short sentences and common words/);
+  assert.match(prompt, /explain it immediately in plain language/);
+  assert.match(prompt, /Do not write a dialogue or role-play/);
   assert.match(prompt, /useful facts, not fancy wording/);
-  assert.match(prompt, /senior engineer explaining a practical debugging or design insight/);
   assert.match(prompt, /Do not write like an essay/);
   assert.match(prompt, /Silence is not success; it is an unobserved state/);
   assert.match(prompt, /inspect the relevant repository files/);
@@ -138,7 +140,9 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /Keep the lesson attached to that surface/);
   assert.match(prompt, /Do not teach recommendation-system architecture/);
   assert.match(prompt, /surprising nearby concept/);
-  assert.match(prompt, /at least 3 concrete facts, mechanisms, or named tradeoffs/);
+  assert.match(prompt, /only the facts needed to make the idea clear/);
+  assert.match(prompt, /Vary the wording naturally/);
+  assert.match(prompt, /same "avoid this because it is tempting" sentence pattern/);
   assert.match(prompt, /real data from the task/);
   assert.match(prompt, /one real example an engineer recognizes/);
   assert.match(prompt, /For a button task/);
@@ -151,7 +155,8 @@ test('lessonPrompt fulfills the selected hook promise', () => {
   assert.match(prompt, /hooks, processes, stdout/);
   assert.match(prompt, /Connect back to the current task through specific details/);
   assert.match(prompt, /already knows the requested feature/);
-  assert.match(prompt, /roughly 450-700 words/);
+  assert.match(prompt, /roughly 220-350 words/);
+  assert.match(prompt, /total under 900 words/);
   assert.match(prompt, /full lesson text/);
   assert.doesNotMatch(prompt, /Output only topic headings/);
 });

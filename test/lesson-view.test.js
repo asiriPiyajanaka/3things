@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLesson, renderLesson } from '../src/lesson-view.js';
+import { doneLabel, parseLesson, renderLesson } from '../src/lesson-view.js';
 
 const markdown = `
 # Repository Boundary
@@ -91,4 +91,9 @@ test('renderLesson removes raw markdown and includes learning context', () => {
   assert.match(text, /Common Mistake/);
   assert.doesNotMatch(text, /\*\*/);
   assert.doesNotMatch(text, /```/);
+});
+
+test('Done explains that it saves the lesson to history', () => {
+  assert.equal(doneLabel(), 'Done\n   Select Done to save this lesson to history.');
+  assert.equal(doneLabel(false), 'Done');
 });

@@ -159,7 +159,13 @@ export function renderLesson(markdown, { area = null, topics = [], color = color
   return { lessons, text: lines.join('\n').trimEnd() };
 }
 
-export async function focusLessonView(lessons) {
+export function doneLabel(saveToHistory = true) {
+  return saveToHistory
+    ? 'Done\n   Select Done to save this lesson to history.'
+    : 'Done';
+}
+
+export async function focusLessonView(lessons, { saveToHistory = true } = {}) {
   if (!process.stdin.isTTY || !process.stdout.isTTY || lessons.length === 0) return;
 
   while (true) {
@@ -169,7 +175,10 @@ export async function focusLessonView(lessons) {
           value: { lessonIndex, sectionIndex },
           label: `${lessons.length > 1 ? `${lessonIndex + 1}. ${lesson.title} — ` : ''}${SECTION_META[section.name]?.label || section.name}`
         }))),
-      { value: null, label: 'Done' }
+      {
+        value: null,
+        label: doneLabel(saveToHistory)
+      }
     ]);
 
     if (!choice) return;

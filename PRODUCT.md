@@ -24,7 +24,7 @@ The user may learn one or all three, but discovery always returns exactly three 
 7. 3Things generates exactly three concepts tied to the real task.
 8. User selects one or all three.
 9. 3Things gives a compact, useful lesson.
-10. Learned topic titles are recorded locally to reduce repetition.
+10. Learned and recently offered topic titles are recorded locally to reduce repetition.
 
 ## Non-goals for MVP
 
