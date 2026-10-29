@@ -1,16 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { codexHooksPath } from './paths.js';
+import { claudeSettingsPath, codexHooksPath } from './paths.js';
 
-export function buildHookCommand(nodePath, cliPath) {
+export function buildHookCommand(nodePath, cliPath, agent = 'codex') {
   const quote = (v) => `"${String(v).replaceAll(/\\/g, '\\\\').replaceAll(/"/g, '\\"')}"`;
-  return `${quote(nodePath)} ${quote(cliPath)} hook`;
+  const agentArg = agent === 'codex' ? '' : ` --agent ${quote(agent)}`;
+  return `${quote(nodePath)} ${quote(cliPath)} hook${agentArg}`;
 }
 
 function is3ThingsHook(hook) {
   return hook?.type === 'command' &&
     typeof hook.command === 'string' &&
-    /(?:^|[\\/])3things\.js["']?\s+hook$/.test(hook.command.trim());
+    /(?:^|[\\/])3things\.js["']?\s+(?:hook(?:\s+--agent\s+["']?(?:codex|claude)["']?)?|capture(?:\s+--agent\s+["']?(?:codex|claude)["']?)?)$/.test(hook.command.trim());
 }
 
 function readHooksFile(hooksPath) {
@@ -27,7 +28,7 @@ function writeHooksFile(hooksPath, root) {
   fs.writeFileSync(hooksPath, `${JSON.stringify(root, null, 2)}\n`);
 }
 
-export function installHook(command, hooksPath = codexHooksPath) {
+function installHookFile(command, hooksPath) {
   fs.mkdirSync(path.dirname(hooksPath), { recursive: true });
   const root = readHooksFile(hooksPath) || {};
   root.hooks ||= {};
@@ -82,7 +83,7 @@ export function installHook(command, hooksPath = codexHooksPath) {
   return { path: hooksPath, added: !found, updated, removed };
 }
 
-export function removeHook(hooksPath = codexHooksPath) {
+function removeHookFile(hooksPath) {
   const root = readHooksFile(hooksPath);
   const groups = root?.hooks?.UserPromptSubmit;
   if (!root || !Array.isArray(groups)) {
@@ -112,4 +113,20 @@ export function removeHook(hooksPath = codexHooksPath) {
   else delete root.hooks.UserPromptSubmit;
   writeHooksFile(hooksPath, root);
   return { path: hooksPath, removed, updated: true };
+}
+
+export function installHook(command, hooksPath = codexHooksPath) {
+  return installHookFile(command, hooksPath);
+}
+
+export function removeHook(hooksPath = codexHooksPath) {
+  return removeHookFile(hooksPath);
+}
+
+export function installClaudeHook(command, settingsPath = claudeSettingsPath) {
+  return installHookFile(command, settingsPath);
+}
+
+export function removeClaudeHook(settingsPath = claudeSettingsPath) {
+  return removeHookFile(settingsPath);
 }

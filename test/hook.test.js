@@ -3,11 +3,22 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildHookCommand, installHook, removeHook } from '../src/hook.js';
+import {
+  buildHookCommand,
+  installClaudeHook,
+  installHook,
+  removeClaudeHook,
+  removeHook
+} from '../src/hook.js';
 
 test('buildHookCommand quotes node and cli paths', () => {
   const command = buildHookCommand('/path with space/node', '/app/3things/bin/3things.js');
   assert.equal(command, '"/path with space/node" "/app/3things/bin/3things.js" hook');
+});
+
+test('buildHookCommand identifies Claude Code captures', () => {
+  const command = buildHookCommand('/node', '/app/3things.js', 'claude');
+  assert.equal(command, '"/node" "/app/3things.js" hook --agent "claude"');
 });
 
 test('installHook replaces a stale 3Things command', () => {
@@ -119,4 +130,33 @@ test('removeHook is a no-op when the hooks file is missing', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), '3things-hook-missing-'));
   const hooksPath = path.join(dir, 'hooks.json');
   assert.deepEqual(removeHook(hooksPath), { path: hooksPath, removed: 0, updated: false });
+});
+
+test('Claude hook install and removal preserve unrelated settings', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), '3things-claude-hook-'));
+  const settingsPath = path.join(dir, 'settings.json');
+  fs.writeFileSync(settingsPath, JSON.stringify({
+    permissions: { allow: ['Read'] },
+    hooks: {
+      UserPromptSubmit: [{
+        hooks: [{ type: 'command', command: 'python3 keep.py' }]
+      }]
+    }
+  }));
+
+  const command = buildHookCommand('/node', '/app/bin/3things.js', 'claude');
+  const installed = installClaudeHook(command, settingsPath);
+  let root = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+
+  assert.equal(installed.added, true);
+  assert.equal(root.permissions.allow[0], 'Read');
+  assert.equal(root.hooks.UserPromptSubmit[1].hooks[0].command, command);
+
+  const removed = removeClaudeHook(settingsPath);
+  root = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  assert.equal(removed.removed, 1);
+  assert.equal(root.permissions.allow[0], 'Read');
+  assert.deepEqual(root.hooks.UserPromptSubmit, [{
+    hooks: [{ type: 'command', command: 'python3 keep.py' }]
+  }]);
 });

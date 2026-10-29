@@ -22,6 +22,7 @@ export const DEFAULT_CONFIG = {
   rememberLearnedTopics: true,
   dailyLearningArea: null,
   learningTerminalMode: 'new',
+  integrations: ['codex'],
   model: null,
   codexExecutable: null
 };

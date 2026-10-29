@@ -91,12 +91,42 @@ test('hook command accepts the current UserPromptSubmit payload', () => {
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+test('hook command records Claude Code as the source agent', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), '3things-claude-hook-command-'));
+  const stateDir = path.join(home, '.3things');
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, 'config.json'), JSON.stringify({
+    enabled: true,
+    trigger: 'manual'
+  }));
+
+  const result = spawnSync(process.execPath, ['bin/3things.js', 'hook', '--agent', 'claude'], {
+    cwd: process.cwd(),
+    env: isolatedHomeEnv(home),
+    input: JSON.stringify({
+      hook_event_name: 'UserPromptSubmit',
+      prompt: 'Explain this retry boundary',
+      cwd: process.cwd(),
+      session_id: 'claude-session'
+    }),
+    encoding: 'utf8'
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const task = JSON.parse(fs.readFileSync(path.join(stateDir, 'latest-task.json'), 'utf8'));
+  assert.equal(task.agent, 'claude');
+  assert.equal(task.sessionId, 'claude-session');
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
 test('signoff removes local state and only the 3Things hook', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), '3things-signoff-'));
   const stateDir = path.join(home, '.3things');
   const codexDir = path.join(home, '.codex');
+  const claudeDir = path.join(home, '.claude');
   fs.mkdirSync(stateDir, { recursive: true });
   fs.mkdirSync(codexDir, { recursive: true });
+  fs.mkdirSync(claudeDir, { recursive: true });
   fs.writeFileSync(path.join(stateDir, 'config.json'), '{}');
   fs.writeFileSync(path.join(codexDir, 'hooks.json'), JSON.stringify({
     hooks: {
@@ -104,6 +134,17 @@ test('signoff removes local state and only the 3Things hook', () => {
         hooks: [
           { type: 'command', command: '"/node" "/app/bin/3things.js" hook' },
           { type: 'command', command: 'python3 keep.py' }
+        ]
+      }]
+    }
+  }));
+  fs.writeFileSync(path.join(claudeDir, 'settings.json'), JSON.stringify({
+    permissions: { allow: ['Read'] },
+    hooks: {
+      UserPromptSubmit: [{
+        hooks: [
+          { type: 'command', command: '"/node" "/app/bin/3things.js" hook --agent "claude"' },
+          { type: 'command', command: 'python3 keep-claude.py' }
         ]
       }]
     }
@@ -120,6 +161,11 @@ test('signoff removes local state and only the 3Things hook', () => {
   const hooks = JSON.parse(fs.readFileSync(path.join(codexDir, 'hooks.json'), 'utf8'));
   assert.deepEqual(hooks.hooks.UserPromptSubmit[0].hooks, [
     { type: 'command', command: 'python3 keep.py' }
+  ]);
+  const claudeSettings = JSON.parse(fs.readFileSync(path.join(claudeDir, 'settings.json'), 'utf8'));
+  assert.deepEqual(claudeSettings.permissions, { allow: ['Read'] });
+  assert.deepEqual(claudeSettings.hooks.UserPromptSubmit[0].hooks, [
+    { type: 'command', command: 'python3 keep-claude.py' }
   ]);
   fs.rmSync(home, { recursive: true, force: true });
 });

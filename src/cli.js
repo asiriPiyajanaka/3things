@@ -17,7 +17,13 @@ import {
 } from './store.js';
 import { chooseMany, chooseOne, clearScreen, confirm, heading, inputText, revealText } from './ui.js';
 import { codexAvailable, resolveCodexExecutable } from './codex.js';
-import { installHook, removeHook, buildHookCommand } from './hook.js';
+import {
+  buildHookCommand,
+  installClaudeHook,
+  installHook,
+  removeClaudeHook,
+  removeHook
+} from './hook.js';
 import { argValue, captureEventFromArgs, normalizeTaskEvent, preview, taskLabel } from './task-event.js';
 import { handleCapturedTask, learnCommand } from './learning-flow.js';
 
@@ -25,7 +31,61 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const cliPath = path.resolve(here, '../bin/3things.js');
 
 function printHelp() {
-  console.log(`3Things — learn three things from the coding tasks you already do.\n\nCommands:\n  3things init           Install Codex hook and configure 3Things\n  3things capture        Capture a task from any coding agent\n  3things config         Change trigger behavior and preferences\n  3things reset          Reset config and run setup again\n  3things signoff        Remove the Codex hook and local state\n  3things interests      Change learning interests\n  3things area           Clear today's learning area\n  3things history        Show recently learned topics\n  3things again          Replay the latest saved lesson\n  3things status         Show local 3Things state\n  3things clear-session  Clear active learning-session marker\n  3things                Learn from the latest captured task\n  3things on|off         Temporarily enable or disable automatic launch\n\nTrigger modes:\n  every   Launch for every captured task\n  smart   Launch only when the task has useful learning value\n  manual  Never auto-launch; run 3things yourself\n`);
+  console.log(`3Things — learn three things from the coding tasks you already do.\n\nCommands:\n  3things init           Install agent hooks and configure 3Things\n  3things capture        Capture a task from any coding agent\n  3things config         Change integrations, triggers, and preferences\n  3things reset          Reset config and run setup again\n  3things signoff        Remove 3Things hooks and local state\n  3things interests      Change learning interests\n  3things area           Clear today's learning area\n  3things history        Show recently learned topics\n  3things again          Replay the latest saved lesson\n  3things status         Show local 3Things state\n  3things clear-session  Clear active learning-session marker\n  3things                Learn from the latest captured task\n  3things on|off         Temporarily enable or disable automatic launch\n\nTrigger modes:\n  every   Launch for every captured task\n  smart   Launch only when the task has useful learning value\n  manual  Never auto-launch; run 3things yourself\n`);
+}
+
+const INTEGRATIONS = [
+  { label: 'Codex — CLI, IDE extension, and desktop app', value: 'codex' },
+  { label: 'Claude Code — CLI, IDE extension, and desktop app', value: 'claude' }
+];
+
+function integrationNames(integrations = []) {
+  return integrations.map((value) => value === 'claude' ? 'Claude Code' : 'Codex').join(', ');
+}
+
+async function configureIntegrations(config) {
+  const current = Array.isArray(config.integrations) ? config.integrations : ['codex'];
+  const selected = await chooseMany(
+    'Where should 3Things capture coding tasks?',
+    INTEGRATIONS,
+    current
+  );
+  config.integrations = selected.length ? selected : ['codex'];
+  return config;
+}
+
+function syncIntegrationHooks(config) {
+  const integrations = new Set(config.integrations || ['codex']);
+  const results = [];
+
+  if (integrations.has('codex')) {
+    results.push({ name: 'Codex', enabled: true, ...installHook(buildHookCommand(process.execPath, cliPath)) });
+  } else {
+    results.push({ name: 'Codex', enabled: false, ...removeHook() });
+  }
+
+  if (integrations.has('claude')) {
+    results.push({
+      name: 'Claude Code',
+      enabled: true,
+      ...installClaudeHook(buildHookCommand(process.execPath, cliPath, 'claude'))
+    });
+  } else {
+    results.push({ name: 'Claude Code', enabled: false, ...removeClaudeHook() });
+  }
+
+  return results;
+}
+
+function printIntegrationResults(results) {
+  for (const result of results) {
+    if (!result.enabled && !result.removed) continue;
+    const status = result.enabled
+      ? result.added ? 'installed' : result.updated ? 'updated' : 'already installed'
+      : 'removed';
+    console.log(`${result.enabled && !result.added && !result.updated ? '•' : '✓'} ${result.name} UserPromptSubmit hook ${status}`);
+    console.log(`• ${result.path}`);
+  }
 }
 
 async function configureInterests(config) {
@@ -60,6 +120,7 @@ function printReady(config) {
   console.log('\n3Things is ready.');
   console.log(`Mode: ${config.trigger}`);
   console.log(`Terminal: ${config.learningTerminalMode}`);
+  console.log(`Integrations: ${integrationNames(config.integrations)}`);
   console.log(`Interests: ${config.interests.join(', ') || 'none'}`);
   console.log('\nUse your coding agent normally. When a captured task has learning value, 3Things opens a short lesson.');
 }
@@ -73,16 +134,14 @@ async function init() {
   let config = loadConfig();
   config.codexExecutable = codexExecutable;
   config = await configure(config);
+  config = await configureIntegrations(config);
   config = await configureInterests(config);
   saveConfig(config);
 
-  const command = buildHookCommand(process.execPath, cliPath);
-  const result = installHook(command);
+  const hookResults = syncIntegrationHooks(config);
 
   console.log(`\n✓ Config saved`);
-  const hookStatus = result.added ? 'installed' : result.updated ? 'updated' : 'already installed';
-  console.log(`${result.added || result.updated ? '✓' : '•'} Codex UserPromptSubmit hook ${hookStatus}`);
-  console.log(`• ${result.path}`);
+  printIntegrationResults(hookResults);
   printReady(config);
 }
 
@@ -90,8 +149,11 @@ async function configCommand() {
   heading('3Things config');
   let config = loadConfig();
   config = await configure(config);
+  config = await configureIntegrations(config);
   saveConfig(config);
+  const hookResults = syncIntegrationHooks(config);
   console.log(`\n✓ Saved. Trigger: ${config.trigger}. Terminal mode: ${config.learningTerminalMode}.`);
+  printIntegrationResults(hookResults);
 }
 
 async function resetCommand() {
@@ -99,17 +161,24 @@ async function resetCommand() {
   let config = resetConfig();
   console.log('Config reset to defaults. Re-running setup questions.');
   config = await configure(config);
+  config = await configureIntegrations(config);
   config = await configureInterests(config);
   saveConfig(config);
+  const hookResults = syncIntegrationHooks(config);
   console.log(`\n✓ Saved. Trigger: ${config.trigger}. Terminal mode: ${config.learningTerminalMode}.`);
+  printIntegrationResults(hookResults);
 }
 
 function signoffCommand() {
-  const hookResult = removeHook();
+  const codexResult = removeHook();
+  const claudeResult = removeClaudeHook();
   signOff();
-  console.log(hookResult.removed
-    ? `Removed ${hookResult.removed} Codex hook${hookResult.removed === 1 ? '' : 's'} from ~/.codex/hooks.json.`
+  console.log(codexResult.removed
+    ? `Removed ${codexResult.removed} Codex hook${codexResult.removed === 1 ? '' : 's'} from ~/.codex/hooks.json.`
     : 'No installed 3Things Codex hook was found.');
+  console.log(claudeResult.removed
+    ? `Removed ${claudeResult.removed} Claude Code hook${claudeResult.removed === 1 ? '' : 's'} from ~/.claude/settings.json.`
+    : 'No installed 3Things Claude Code hook was found.');
   console.log('Removed local 3Things state from ~/.3things.');
   console.log('Run `3things init` when you want to start again.');
 }
@@ -131,7 +200,7 @@ async function readStdin() {
   });
 }
 
-async function hookCommand() {
+async function hookCommand(args) {
   if (process.env.THREETHINGS_CHILD === '1') return;
 
   const raw = await readStdin();
@@ -143,7 +212,7 @@ async function hookCommand() {
 
   const normalized = normalizeTaskEvent({
     ...event,
-    agent: 'codex'
+    agent: argValue(args, '--agent') || 'codex'
   });
   if (!normalized) return;
   await handleCapturedTask(normalized);
@@ -221,6 +290,7 @@ function statusCommand() {
   heading('3Things status');
   console.log(`enabled: ${formatStatus(config.enabled)}`);
   console.log(`trigger: ${config.trigger}`);
+  console.log(`integrations: ${integrationNames(config.integrations)}`);
   console.log(`terminal mode: ${config.learningTerminalMode}`);
   console.log(`daily area: ${area || 'none'}`);
   console.log(`active session: ${formatStatus(session?.active)}${session?.pid ? ` (pid ${session.pid})` : ''}`);
@@ -247,7 +317,7 @@ export async function main(args) {
   if (command === 'again') return againCommand();
   if (command === 'status') return statusCommand();
   if (command === 'clear-session') return clearSessionCommand();
-  if (command === 'hook') return hookCommand();
+  if (command === 'hook') return hookCommand(args.slice(1));
   if (command === 'capture') return captureCommand(args.slice(1));
   if (command === 'learn') return learnCommand(argValue(args, '--event'), { changeArea: args.includes('--change-area') });
   if (command === 'on') return toggle(true);

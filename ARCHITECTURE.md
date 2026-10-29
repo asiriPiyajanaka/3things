@@ -10,6 +10,7 @@ Coding agent
 agent adapter
    │
    ├─ Codex UserPromptSubmit ─────► `3things hook`
+   ├─ Claude UserPromptSubmit ────► `3things hook --agent claude`
    │
    └─ generic integration ────────► `3things capture`
               │
@@ -56,12 +57,12 @@ agent adapter
 
 3Things keeps task capture separate from lesson generation.
 
-- `3things hook` is the Codex adapter. It reads the `UserPromptSubmit` JSON payload and normalizes it into a task.
+- `3things hook` is the Codex adapter. `3things hook --agent claude` handles the compatible Claude Code event and labels its source correctly.
 - `3things capture` is the generic adapter. It accepts plain text, CLI flags, or JSON from any coding agent or script.
 
 Once a task is captured, trigger policy, terminal behavior, pending lessons, history, and lesson generation are shared.
 
-`3things signoff` removes only 3Things command hooks from the user-level Codex hook file, preserves unrelated hooks, and then deletes local 3Things state. Users should run it before uninstalling the npm package so Codex is not left with a stale command.
+`3things signoff` removes only 3Things command hooks from the user-level Codex and Claude Code configuration files, preserves unrelated settings and hooks, and then deletes local 3Things state. Users should run it before uninstalling the npm package so no agent is left with a stale command.
 
 ## Why a Codex hook instead of a wrapper
 
@@ -113,6 +114,7 @@ The learning model may inspect the repository for context but should not write t
   "interests": ["Frontend", "Backend", "Architecture", "DevOps", "Testing"],
   "suggestOutsideInterests": true,
   "rememberLearnedTopics": true,
+  "integrations": ["codex", "claude"],
   "model": null
 }
 ```

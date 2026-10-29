@@ -39,6 +39,10 @@ test('default learning terminal mode opens a new terminal per lesson', () => {
   assert.equal(DEFAULT_CONFIG.learningTerminalMode, 'new');
 });
 
+test('Codex is the default capture integration', () => {
+  assert.deepEqual(DEFAULT_CONFIG.integrations, ['codex']);
+});
+
 test('daily learning area is fresh for less than 24 hours', () => {
   const config = structuredClone(DEFAULT_CONFIG);
   setDailyArea(config, 'Frontend', new Date('2026-08-21T00:00:00.000Z'));

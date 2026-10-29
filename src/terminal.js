@@ -1,4 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { safeSubprocessEnv } from './subprocess-env.js';
@@ -22,9 +25,14 @@ export function learningCommand(
   return `${prefix}${quote(nodePath)} ${quote(targetCliPath)} learn --event ${quote(eventFile)}`;
 }
 
-export function macTerminalScript(command) {
-  const escaped = command.replaceAll(/\\/g, '\\\\').replaceAll(/"/g, '\\"');
-  return `tell application "Terminal"\nactivate\ndo script "${escaped}"\nend tell`;
+export function macCommandContents(command) {
+  return `#!/bin/sh\nlauncher_file=$0\nrm -f -- "$launcher_file"\nexec ${command}\n`;
+}
+
+function createMacCommandFile(command) {
+  const commandFile = path.join(os.tmpdir(), `3things-${process.pid}-${randomUUID()}.command`);
+  fs.writeFileSync(commandFile, macCommandContents(command), { mode: 0o700 });
+  return commandFile;
 }
 
 function commandExists(name) {
@@ -47,9 +55,14 @@ export function openLearningTerminal(eventFile) {
   const command = learningCommand(eventFile);
 
   if (process.platform === 'darwin') {
-    const script = macTerminalScript(command);
-    spawnDetached('osascript', ['-e', script]);
-    return true;
+    const commandFile = createMacCommandFile(command);
+    const result = spawnSync('/usr/bin/open', ['-a', 'Terminal', commandFile], {
+      stdio: 'ignore',
+      env: safeSubprocessEnv()
+    });
+    if (result.status === 0) return true;
+    try { fs.rmSync(commandFile, { force: true }); } catch {}
+    return false;
   }
 
   if (process.platform === 'win32') {

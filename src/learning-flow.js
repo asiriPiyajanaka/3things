@@ -59,8 +59,9 @@ export async function handleCapturedTask(event) {
     markLearningSession({ pid: null, eventFile });
   }
 
-  if (!openLearningTerminal(eventFile) && config.learningTerminalMode === 'single') {
-    clearLearningSession();
+  if (!openLearningTerminal(eventFile)) {
+    if (config.learningTerminalMode === 'single') clearLearningSession();
+    throw new Error('Could not open the 3Things lesson terminal. Run `3things` manually to continue.');
   }
 }
 

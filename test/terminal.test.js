@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { learningCommand, macTerminalScript, windowsPowerShellPath } from '../src/terminal.js';
+import { learningCommand, macCommandContents, windowsPowerShellPath } from '../src/terminal.js';
 
-test('macTerminalScript activates Terminal before running lesson command', () => {
-  const script = macTerminalScript('/path with "quote"/node 3things');
+test('macOS command launcher removes itself and runs the lesson', () => {
+  const script = macCommandContents("'/path with space/node' 3things");
 
-  assert.match(script, /tell application "Terminal"/);
-  assert.match(script, /activate/);
-  assert.match(script, /do script/);
-  assert.match(script, /\\"quote\\"/);
+  assert.match(script, /^#!\/bin\/sh/);
+  assert.match(script, /rm -f -- "\$launcher_file"/);
+  assert.match(script, /exec '\/path with space\/node' 3things/);
+  assert.doesNotMatch(script, /osascript|tell application/);
 });
 
 test('windowsPowerShellPath resolves independently of PATH', () => {

@@ -10,3 +10,4 @@ export const pendingTaskPath = path.join(homeDir, 'pending-task.json');
 export const smartDecisionPath = path.join(homeDir, 'smart-decision.json');
 export const tasksDir = path.join(homeDir, 'tasks');
 export const codexHooksPath = path.join(os.homedir(), '.codex', 'hooks.json');
+export const claudeSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');
